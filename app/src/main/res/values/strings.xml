@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">MVVM Example</string>
+    <string name="coupons_details_by_category">Coupons Details by category</string>
 </resources>

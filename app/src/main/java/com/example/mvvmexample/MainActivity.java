@@ -5,6 +5,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -13,8 +14,11 @@ import androidx.lifecycle.ViewModelProvider;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.Function;
+import io.reactivex.observers.DisposableObserver;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
@@ -98,10 +102,46 @@ public class MainActivity extends AppCompatActivity {
 
     private void setCoupons(List<Coupon> coupons){
         //display received data from viewmodel
-        ArrayAdapter<Coupon> itemsAdapter =
-                new ArrayAdapter<Coupon>(this,
-                        android.R.layout.simple_list_item_1, coupons);
-        couponsLst.setAdapter(itemsAdapter);
+
+        List<String> couponList = new ArrayList<>();
+
+        Observable.just(coupons)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .flatMapIterable(new Function<List<Coupon>, Iterable<Coupon>>() {
+                    @Override
+                    public Iterable<Coupon> apply(List<Coupon> coupons) throws Exception {
+                        return coupons;
+                    }
+                })
+                .map(new Function<Coupon, Coupon>() {
+                    @Override
+                    public Coupon apply(Coupon coupon) throws Exception {
+                        return coupon;
+                    }
+                })
+                .subscribe(new DisposableObserver<Coupon>() {
+                    @Override
+                    public void onNext(Coupon coupon) {
+                     couponList.add("Store : "+coupon.store +"\nOffer : "+coupon.offer +"\nExpiry Date : "+coupon.expiry);
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        Toast.makeText(MainActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        if (couponList == null){
+                            couponList.add("No Data found");
+                        }
+                        ArrayAdapter<String> itemsAdapter = new ArrayAdapter<String>(MainActivity.this,
+                                android.R.layout.simple_list_item_1, couponList);
+                        couponsLst.setAdapter(itemsAdapter);
+                    }
+                });
+
     }
     
 }
